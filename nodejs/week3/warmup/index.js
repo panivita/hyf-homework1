@@ -3,10 +3,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
-// Calculator using :method (path) parameter
-// Calculator using req.body
+
 // calculator will support 4 features: addition, subtraction, multiplication, division
-//
 const calculate = (otherNumbers, operator, initualNumber) => {
   return otherNumbers.reduce((x, y) => {
     switch (operator) {
@@ -23,6 +21,7 @@ const calculate = (otherNumbers, operator, initualNumber) => {
 };
 const getArrSecondParam = (number) => Object.values(number).map(Number);
 
+// Calculator using :method (path) parameter
 app.get("/calculator/:method", (req, res) => {
   const { firstParam, secondParam } = req.query;
   const { method } = req.params;
@@ -41,6 +40,7 @@ app.get("/calculator/:method", (req, res) => {
   }
 });
 
+// Calculator using req.body
 app.post("/calculator", (req, res) => {
   const { method } = req.body;
   const { firstParam, secondParam } = req.query;
