@@ -1,4 +1,5 @@
 const express = require("express");
+require("express-async-errors");
 const router = express.Router();
 const knex = require("../database");
 
@@ -25,46 +26,34 @@ router.post("/", async (req, res) => {
     price,
     created_date,
   };
-  try {
-    await knex("meal").insert(newMeal);
-    res.send("New meal added");
-  } catch (error) {
-    res.send("Error: " + error);
-  }
+
+  await knex("meal").insert(newMeal);
+  res.send("New meal added");
 });
 
 //Returns meal by id
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  try {
-    const mealById = await knex("meal").select().where({ id });
-    res.json(mealById);
-  } catch (error) {
-    throw error;
-  }
+
+  const mealById = await knex("meal").select().where({ id });
+  res.json(mealById);
 });
 
 // Updates the meal by id
 router.put("/:id", async (req, res) => {
   const { title } = req.body;
   const { id } = req.params;
-  try {
-    await knex("meal").where({ id }).update({ title });
-    res.send(`Meal with id ${id} was updated`);
-  } catch (error) {
-    res.send("Error: " + error);
-  }
+
+  await knex("meal").where({ id }).update({ title });
+  res.send(`Meal with id ${id} was updated`);
 });
 
 //Deletes the meal by id
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
-  try {
-    await knex("meal").where({ id }).del();
-    res.send(`Meal with id ${id} was deleted`);
-  } catch (error) {
-    res.send("Error: " + error);
-  }
+
+  await knex("meal").where({ id }).del();
+  res.send(`Meal with id ${id} was deleted`);
 });
 
 //Returns all meals
@@ -82,43 +71,49 @@ router.get("/", async (req, res) => {
     createdAfter,
     limit,
   } = req.query;
-  let meals = await knex.select("*").table("meal");
+  let meals = await knex("meal").select("*");
 
   if (maxPrice) {
     const numMaxPrice = parseInt(maxPrice);
-    meals = await knex("meal").select().where("price", "<", numMaxPrice);
+    meals = await knex("meal").select("*").where("price", "<", numMaxPrice);
   }
-  if (availableReservations === true) {
-    meals = await knex
-      .from("meal")
+
+  if (availableReservations === "true") {
+    meals = await knex("meal")
       .select("*")
       .sum({ total: "reservation.number_of_guests" })
       .join("reservation", { "meal.id": "reservation.meal_id" })
-      .where("meal.meal_time", "<", knex.fn.now())
+      .where("meal.meal_time", ">=", knex.fn.now())
       .groupBy("meal.id")
-      .having(sum(total), "<", "meal.max_reservations");
+      .orderBy("meal.title", "asc")
+      .having("total", ">", "meal.max_reservations");
   }
 
   if (title) {
-    meals = await knex("meal").where("title", "like", `%${title}%`);
+    meals = await knex("meal").select("*").where("title", "like", `%${title}%`);
   }
 
   if (createdAfter) {
     const dateCreatedAfter = new Date(createdAfter);
     meals = await knex("meal")
-      .select()
+      .select("*")
       .where("created_date", ">", dateCreatedAfter);
   }
 
   if (limit) {
     const numMealLimit = parseInt(limit);
-    meals = await knex.select().from("meal").limit(numMealLimit);
+    meals = await knex("meal").select("*").limit(numMealLimit);
   }
 
-  if (meals.length === 0) {
+  if (meals.length === 0 || availableReservations === "false") {
     res.status(404).send(`404 Error. Meal is not found`);
   }
+
   res.json(meals);
+});
+
+router.use((err, req, res, next) => {
+  res.status(400).send(err.message);
 });
 
 module.exports = router;

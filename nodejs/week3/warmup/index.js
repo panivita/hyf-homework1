@@ -19,6 +19,7 @@ const calculate = (otherNumbers, operator, initualNumber) => {
     }
   }, initualNumber);
 };
+
 const getArrSecondParam = (number) => Object.values(number).map(Number);
 
 // Calculator using :method (path) parameter
