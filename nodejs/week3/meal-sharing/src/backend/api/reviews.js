@@ -1,15 +1,14 @@
 const express = require("express");
-const app = express();
 const router = express.Router();
 const knex = require("../database");
 
 //Returns all reviews
-router.get("/", async (request, response) => {
+router.get("/", async (req, res) => {
   try {
     const allReviews = await knex.select("*").table("review");
-    response.json(allReviews);
+    res.json(allReviews);
   } catch (error) {
-    throw error;
+    res.send("Error: " + error);
   }
 });
 
